@@ -1,4 +1,5 @@
-#please cite this reference 'Finite Element Modeling for Concrete-Filled Steel Tube Stub Columns Under Axial Compression'
+#please cite this reference
+#Megahed, K., Mahmoud, N.S. & Abd-Rabou, S.E.M. Finite Element Modeling for Concrete-Filled Steel Tube Stub Columns Under Axial Compression. Int J Steel Struct (2024). https://doi.org/10.1007/s13296-024-00896-7
 from abaqus import *
 from abaqusConstants import *
 import regionToolset
@@ -25,7 +26,7 @@ import math
 import numpy as np
 import time
 
-
+# this is a fucntion
 def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
     mesh_size= BB/15.
     #rr,rr1=D/2.-t,D/2.-t
@@ -33,7 +34,6 @@ def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
     rr=HH/2.-t
     rec=1
     timy=1.0
-    #incy,visco,eccent,giv_angl=0.02,0.00002,0.2,5.
     incy,visco,eccent,giv_angl=0.01/timy,0.0001,0.2,5.
     run_name=nam
     #h,HH,BB,t=450.0,150.0,150.0,3.2
@@ -43,64 +43,34 @@ def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
     disp=-h*0.03*timy
     Ec,ni=4400*fco**0.5,1+0.03*fco
     eco,mu=0.00076+(0.0626*fco-0.433)**0.5*0.001,8.*10**-6*fco*fco+0.0002*fco+0.138
-    #if fco>100:
-    #    eco=(0.00076+(0.0626*fco-0.433)**0.5*0.001-0.003173918)*0.5+0.003173918
-    #8.*10**-6*fco*fco+0.0002*fco+0.138
-    #(-0.067*fco*fco+29.9*fco+1053)*10**-6
     fb_fc=max(1.07,1.5*fco**-0.075)#fb_fc
     AA=(fb_fc-1.)/(2.*fb_fc-1.)
-    #ec_x= lambda x,fl,eco,fco,ni,mu:x/mu/(1+(x/mu/eco)**ni)**(1/ni)+0.04*x**0.7*(1+21*(fl/fco)**0.8)
-    #ec_x= lambda x,fl:x/mu/(1+(x/mu/eco)**ni)**(1/ni)+0.04*x**0.7*(1+21*(fl/fco)**0.8)
     fc_ac_x= lambda x,fcc,ecc,r: fcc*(x/ecc)*r/(r-1.+(x/ecc)**r)
-    #fc_ac_x1= lambda x,fcc,ecc,AA,BB: fcc*(AA*(x/ecc)+BB*(x/ecc)**2.)/(1.+(AA-2.)*(x/ecc)+(BB+1.)*(x/ecc)**2.)#TAO
     fc_de_x= lambda x,fcc,ecc,eci,fc_res: fcc-(fcc-fc_res)/(1.+((eci-ecc)/(x-ecc))**2.0)
-    #fc_de_x2= lambda x,fcc,ecc,eci,fc_res: fc_res-(fcc-fc_res)*exp((x-ecc)*-1./(eci-ecc))
     stress_strain,data,plastic,dil=[],[],[],[]
     kr,yield1=4.1,0.5
-    #xxx=3.5,min(0.35+0.003*fco,0.8)*1.25
     incyr=[1./3.,0.25,0.25,1./6.-0.00001,1./6.,0.25,0.5,1.,2.,4.,8.,12.,18.,30.,50.]
-    #max(0.58,min(0.61*(210000.*2.*t/D/4000.)**0.17,0.78))
-    #max(0.58,min(0.641*(210000.*2.*t/D/3000.)**0.17,0.9))
-    #kkk=max(0.58,min(0.625*(210000.*2.*t/D/3500.)**0.15,0.85))
     kkk,kkk1=0.55,0.9
     kkk,kkk1=0.65,0.85
     for j in range(len(fl)):
         kr=max((2.0*kkk1+2.-3.*kkk1/fb_fc)/(2.*kkk1-1.),min((2.0*kkk+2.-3.*kkk/fb_fc)/(2.*kkk-1.),5.2*fco**(-0.09)*(fl[j]/fco)**(fco**-0.06-1.0)))
         fcc=fco+kr*fl[j]
         print(kr)
-        #print(kr)
-        #ecc=min(eco+0.045*(fl[j]/fco)**1.15,eco+(fcc-2*mu*fl[j]-fco)/Ec)
-        #ecc=eco+0.025*(fl[j]/fco)**1.15
         ecc1=eco+0.045*(fl[j]/fco)**1.15
         ecc=ecc1
-        #ecc=eco-fco/2.0/Ec+(fcc-2*mu*fl[j])/Ec
-        #ecc1=max(eco+0.045*(fl[j]/fco)**1.15,ecc)
-        #ecc=ecc1
-        #ecc=eco+0.045*(fl[j]/fco)**1.15
-        #ecc1
-        #eco*(1.+17.5*(fl[j]/fco))
         fc_res=min(1.6*fcc*(fl[j]**0.24/fco**0.32),fcc-0.15*fco,0.33*fco+kr*fl[j])
-        #fc_res=min(1.6*fcc*(fl[j]**0.24/fco**0.32),fcc-0.15*fco)
         eci=2.8*ecc*(fc_res/fcc)*fco**-0.12+10.*ecc*(1.0-fc_res/fcc)*fco**-0.47
-        #fc_res=min(fc_res,0.35*fco+kr*fl[j])#0.25*fco+kr*fl[j]     OLD ONE   
-        #yield1=xxx*max(0.4,min(1.0,4.*fl[j]/fco))
         fyy=kr*fl[j]+yield1*fco
         ey=fyy/Ec-2*mu*fl[j]/Ec
         r=1./(1.-(fcc-fyy)/(ecc-ey)/Ec)
         stress_strain.append([yield1*fco,0.0,fl[j]]) #elastic perfectly plastic
         dd,ecc_x=ecc-ey,ey
-        #ecc_x=ey+0.0005
-        #print(eci,fc_res)
         var=0
         breaky=0
         for i in range(len(incyr)):        
-            #ecc_x=ecc_x*1.15
             ecc_x=incyr[i]*dd+ecc_x
             if ecc_x<=ecc:
-                #AA=(ecc-ey)*Ec/(fcc-fyy)
-                #BB=(AA-1.0)**2./0.55-1.0
-                #fc=fc_ac_x1(ecc_x-ey,fcc-fyy,ecc-ey,AA,BB)+fyy
-                fc=fc_ac_x(ecc_x-ey,fcc-fyy,ecc-ey,r)+fyy
+                 fc=fc_ac_x(ecc_x-ey,fcc-fyy,ecc-ey,r)+fyy
             else:
                 if var==0:
                     ecc_x=ecc1+0.000001
@@ -108,8 +78,6 @@ def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
                 fc=fc_de_x(ecc_x,fcc,ecc1,eci,fc_res)
                 if fc<0.03*fco:
                     breaky=1
-                #print(2)
-            #print(j,fc)
             stress_strain.append([fc-kr*fl[j],ecc_x-(fc-2.*mu*fl[j])/Ec,fl[j]])
             if ecc_x>0.06:
                 break
@@ -122,20 +90,11 @@ def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
     plastic=[]
     for j in range(len(fl)):
         k=1.0
-        #k=5.
-        #kr=min((2.0*kkk+2.-3.*kkk/fb_fc)/(2.*kkk-1.),5.2*fco**(-0.09)*(fl[j]/fco)**(fco**-0.06-1.0))
-        #kr=max((2.0*kkk1+2.-3.*kkk1/fb_fc)/(2.*kkk1-1.),min((2.0*kkk+2.-3.*kkk/fb_fc)/(2.*kkk-1.),5.2*fco**(-0.09)*(fl[j]/fco)**(fco**-0.06-1.0)))
         kr=max((2.0*kkk1+2.-3.*kkk1/fb_fc)/(2.*kkk1-1.),min((2.0*kkk+2.-3.*kkk/fb_fc)/(2.*kkk-1.),5.2*fco**(-0.09)*(fl[j]/fco)**(fco**-0.06-1.0)))
         for i in range(10):
             ang_lim=min(53,45.93-1.29*k)
-            #kkk=max(0.55,min(0.9/(k+1.0)**0.15-0.06,0.8))
-            #kr=min((2.0*kkk+2.-3.*kkk/fb_fc)/(2.*kkk-1.),5.2*fco**(-0.09)*(fl[j]/fco)**(fco**-0.06-1.0))      
-            #ang_lim=5.
-            #ang_lim=max(20,ang_lim)
             plastic.append([max(ang_lim,giv_angl),eccent,fb_fc,fb_fc*(kr+2.)/(3.+2.*fb_fc*(kr-1.)),visco,fl[j],k])
             k=k+3.3
-            #plastic.append([k,eccent,fb_fc,fb_fc*(kr+2.)/(3.+2.*fb_fc*(kr-1.)),visco,fl[j],k])
-            #k=k+45.
         
     
     tably3=tuple(i for i in plastic)
@@ -144,7 +103,6 @@ def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
     nm.Material(name='conc')
     nm.materials['conc'].Elastic(table=((Ec,mu),))
     nm.materials['conc'].UserDefinedField()
-    #nm.materials['conc'].ConcreteDamagedPlasticity(dependencies=1, table=tably2, temperatureDependency=OFF)
     nm.materials['conc'].ConcreteDamagedPlasticity(dependencies=2, table=tably3, temperatureDependency=OFF)
     nm.materials['conc'].concreteDamagedPlasticity.ConcreteCompressionHardening(dependencies=1, rate=OFF, table=tably, temperatureDependency=OFF)
     nm.materials['conc'].concreteDamagedPlasticity.ConcreteTensionStiffening(dependencies=0, rate=OFF, table=((fco/10., 0.12), ), temperatureDependency=OFF,type=GFI)
@@ -185,7 +143,6 @@ def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
     dispFile.write('                  WRITE(6,*) \'REQUEST ERROR IN\','+'\n')
     dispFile.write('     1     NOEL,\'INTEGRATION POINT NUMBER \',NPT'+'\n'+'            ENDIF'+'\n'+'            RETURN'+'\n'+'            END')
     dispFile.close()
-    #FIELD(1)/(xy*FC)*FIELD(1)*FIELD(1)/(FC*FC)*160.
     tably=tuple(i for i in stress_strain)
     tably2=tuple(i for i in dil)
     nm.Material(name='steel')
@@ -286,5 +243,7 @@ def rec(nam,filn,h,HH,BB,t,fy,fco,scale,txy,timy):
     mdb.jobs[run_name].submit(consistencyChecking=OFF)
     
 
-nam='FFFF1'
-RRR=rec(nam,'C:\\SIMULIA\\Abaqus\\Commands\\'+nam+'.for',500,100,200.,5.,300,20,-0.01,'2.0/xy**0.66',1)
+nam='my_rect_model'
+#concrete_strength
+fco = 20.0
+RRR=rec(nam,'C:\\SIMULIA\\Abaqus\\Commands\\'+nam+'.for',500,100,200.,5.,300,fco,-0.01,'2.0/xy**0.66',1)
